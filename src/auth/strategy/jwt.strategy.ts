@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -20,15 +22,32 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   // If validation passes, this method returns a value that gets attached to the request object (as req.user)
-  async validate(payload: { sub: number; email: string }) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: payload.sub,
-      },
-    });
-    if (user) {
-      const { hash, ...rest } = user;
-      return rest;
+  async validate(payload: {
+    sub: number;
+    email: string;
+    userType: 'individual' | 'corporate';
+  }) {
+    let user;
+
+    if (payload.userType === 'individual') {
+      user = await this.prisma.individualUser.findUnique({
+        where: {
+          id: payload.sub,
+        },
+      });
+    } else if (payload.userType === 'corporate') {
+      user = await this.prisma.corporateUser.findUnique({
+        where: {
+          id: payload.sub,
+        },
+      });
     }
+
+    if (user) {
+      const { hash, verificationCode, ...rest } = user;
+      return { sub: user.id, ...rest }; // Return user without sensitive data like hash and verificationCode
+    }
+
+    return null; // If user is not found, return null
   }
 }

@@ -6,7 +6,17 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: bookmarks
+      POSTGRES_DB: comx
+    networks:
+      - freecodecamp
+  test-db:
+    image: postgres:13
+    ports:
+      - '5435:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: comx
     networks:
       - freecodecamp
 

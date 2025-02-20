@@ -1,14 +1,32 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    // credentials: true, // Uncomment if needed
+  });
+  app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Stripping out undefined elements in the DTO
+      whitelist: true,
     }),
   );
+
+  // Swagger configuration using DocumentBuilder
+  const config = new DocumentBuilder()
+    .setTitle('ComX API')
+    .setDescription('API documentation for the ComX MFB application')
+    .setVersion('1.0')
+    .addBearerAuth() // Include if you use JWT authentication
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();
