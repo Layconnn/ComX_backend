@@ -27,4 +27,4 @@ EXPOSE 3000
 RUN npx prisma migrate deploy
 
 # Start the application in development mode
-CMD ["yarn", "start:dev"]
+CMD ["node", "dist/main.js"]
