@@ -118,7 +118,7 @@ https://your-railway-domain.up.railway.app/api/docs
 The app uses Swagger to generate interactive API documentation.
 
 - Access the docs locally: `http://localhost:3000/api/docs`
-- Access in production: `https://your-railway-domain.up.railway.app/api/docs`
+- Access in production: `https://comx-backend.onrender.com/api/docs`
 
 ## 🔐 Authentication Endpoints
 
