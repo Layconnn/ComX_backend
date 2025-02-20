@@ -1,6 +1,9 @@
 # Use Node 20 Alpine image
 FROM node:20-alpine
 
+# Increase Node's memory allocation (adjust as needed)
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 # Set working directory
 WORKDIR /app
 
@@ -11,7 +14,7 @@ RUN yarn install --frozen-lockfile
 # Copy the rest of the application code
 COPY . .
 
-# Generate the Prisma Client (ensure the client is generated for production)
+# Generate the Prisma Client
 RUN npx prisma generate
 
 # Build the NestJS application
@@ -20,8 +23,8 @@ RUN yarn build
 # Expose the application port (3000 as defined in your app)
 EXPOSE 3000
 
-# Optionally run database migrations (if you want to auto-deploy migrations)
+# Optionally run database migrations
 RUN npx prisma migrate deploy
 
-# Start the application
-CMD ["node", "dist/main.js"]
+# Start the application in development mode (watch mode)
+CMD ["yarn", "start:dev"]
