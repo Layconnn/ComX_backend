@@ -1,4 +1,0 @@
-[build]
-type = "docker"
-dockerfilePath = "Dockerfile"
-buildContext = "."
