@@ -1,14 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import * as dotenv from 'dotenv';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  dotenv.config({
+    path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
+  });
+
   app.enableCors({
     origin: 'http://localhost:3000',
-    // credentials: true, // Uncomment if needed
   });
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
