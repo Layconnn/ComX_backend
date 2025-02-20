@@ -11,17 +11,16 @@ WORKDIR /opt/render/project/src
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
-# Copy the rest of the application code
+RUN yarn install --production=false
+
 COPY . .
 
-# Generate the Prisma Client (ensure the client is generated for development)
 RUN npx prisma generate
-
-# Build the NestJS application (if needed in dev mode, this might not be required)
+RUN npx prisma migrate deploy
 RUN yarn build
 
 # Expose the application port (3000 as defined in your app)
-EXPOSE 3000
+EXPOSE 4000
 
 # Optionally run database migrations (if you want to auto-deploy migrations)
 RUN npx prisma migrate deploy

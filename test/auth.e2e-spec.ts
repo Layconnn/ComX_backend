@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 jest.setTimeout(30000); // Increase timeout to 30 seconds
 
 import { INestApplication, ValidationPipe } from '@nestjs/common';
