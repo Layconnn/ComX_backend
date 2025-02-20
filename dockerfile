@@ -1,14 +1,12 @@
-# Use an official Node.js runtime as a parent image
-FROM node:16-alpine
+# Use Node.js v20 for compatibility with @nestjs/core
+FROM node:20-alpine
 
 # Set the working directory
 WORKDIR /app
 
 # Copy package files and install dependencies using Yarn
 COPY package.json yarn.lock ./
-
-# Use --frozen-lockfile to ensure package versions are respected
-RUN yarn install --frozen-lockfile --ignore-scripts
+RUN yarn install --frozen-lockfile
 
 # Copy the rest of the application code
 COPY . .
@@ -22,7 +20,7 @@ RUN yarn build
 # Expose the port
 EXPOSE 3000
 
-# Run database migrations (optional but helpful for deployment)
+# Run database migrations (optional)
 RUN npx prisma migrate deploy
 
 # Start the application
