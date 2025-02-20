@@ -70,27 +70,27 @@ export class AuthService {
   }
 
   // Helper to send an SMS with the OTP (used for individual sign-up)
-  private async sendSmsVerificationCode(
-    phone: string,
-    code: string,
-  ): Promise<void> {
-    if (process.env.NODE_ENV === 'test') {
-      console.log(`[TEST] Would send SMS to ${phone} with code: ${code}`);
-      return;
-    }
-    const from = this.config.get<string>('TWILIO_PHONE_NUMBER');
-    const message = `Your verification code is ${code}`;
-    try {
-      await this.twilioClient.messages.create({
-        body: message,
-        from,
-        to: phone,
-      });
-      console.log(`SMS sent to ${phone}`);
-    } catch (error) {
-      console.error(`Failed to send SMS to ${phone}`, error);
-    }
-  }
+  // private async sendSmsVerificationCode(
+  //   phone: string,
+  //   code: string,
+  // ): Promise<void> {
+  //   if (process.env.NODE_ENV === 'test') {
+  //     console.log(`[TEST] Would send SMS to ${phone} with code: ${code}`);
+  //     return;
+  //   }
+  //   const from = this.config.get<string>('TWILIO_PHONE_NUMBER');
+  //   const message = `Your verification code is ${code}`;
+  //   try {
+  //     await this.twilioClient.messages.create({
+  //       body: message,
+  //       from,
+  //       to: phone,
+  //     });
+  //     console.log(`SMS sent to ${phone}`);
+  //   } catch (error) {
+  //     console.error(`Failed to send SMS to ${phone}`, error);
+  //   }
+  // }
 
   // ----- Sign-Up Flow (Individual) -----
   async signupIndividual(dto: IndividualSignupDto) {
@@ -119,9 +119,9 @@ export class AuthService {
       });
       // Send OTP via email and SMS
       await this.sendEmailVerificationCode(dto.email, verificationCode);
-      if (user.phone) {
-        await this.sendSmsVerificationCode(user.phone, verificationCode);
-      }
+      // if (user.phone) {
+      //   await this.sendSmsVerificationCode(user.phone, verificationCode);
+      // }
       return {
         message:
           'Individual account created. A verification code has been sent to your email.',
