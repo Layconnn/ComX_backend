@@ -1,21 +1,30 @@
-# Use an official Node.js runtime (adjust version as needed)
+# Use an official Node.js runtime as a parent image
 FROM node:16-alpine
 
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
 # Copy package files and install dependencies using Yarn
 COPY package.json yarn.lock ./
 RUN yarn install --production
 
-# Copy the rest of your application code
+# Copy the rest of the application code
 COPY . .
 
-# Build the NestJS application (assuming you have a build script in package.json)
+# Generate Prisma client (important for production)
+RUN npx prisma generate
+
+# Build the NestJS application
 RUN yarn build
 
-# Expose the port your app listens on (e.g., 3000)
+# Expose the port
 EXPOSE 3000
+
+# Set environment variables for Prisma
+ENV DATABASE_URL=${DATABASE_URL}
+
+# Run database migrations (optional, but helpful for smooth deploys)
+RUN npx prisma migrate deploy
 
 # Start the application
 CMD ["node", "dist/main.js"]
