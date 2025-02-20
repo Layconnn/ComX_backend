@@ -6,12 +6,14 @@ WORKDIR /app
 
 # Copy package files and install dependencies using Yarn
 COPY package.json yarn.lock ./
-RUN yarn install --production
+
+# Use --frozen-lockfile to ensure package versions are respected
+RUN yarn install --frozen-lockfile --ignore-scripts
 
 # Copy the rest of the application code
 COPY . .
 
-# Generate Prisma client (important for production)
+# Generate Prisma client
 RUN npx prisma generate
 
 # Build the NestJS application
@@ -20,10 +22,7 @@ RUN yarn build
 # Expose the port
 EXPOSE 3000
 
-# Set environment variables for Prisma
-ENV DATABASE_URL=${DATABASE_URL}
-
-# Run database migrations (optional, but helpful for smooth deploys)
+# Run database migrations (optional but helpful for deployment)
 RUN npx prisma migrate deploy
 
 # Start the application
