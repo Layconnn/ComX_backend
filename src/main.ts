@@ -12,8 +12,9 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'https://comx-mfb.netlify.app'],
   });
+
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
