@@ -26,7 +26,7 @@ async function bootstrap() {
     .setTitle('ComX API')
     .setDescription('API documentation for the ComX MFB application')
     .setVersion('1.0')
-    .addBearerAuth() // Include if you use JWT authentication
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);

@@ -14,10 +14,6 @@ export class PrismaService extends PrismaClient {
     });
   }
 
-  /**
-   * Clean the database by truncating tables.
-   * Adjust table names as needed.
-   */
   async cleanDb() {
     // TRUNCATE tables with CASCADE to remove all data and handle FK constraints.
     await this.$executeRawUnsafe(`

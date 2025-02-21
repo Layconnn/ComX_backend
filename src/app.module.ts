@@ -17,7 +17,7 @@ import { KeepAliveService } from './common/keep-alive.service';
     PrismaModule,
   ],
   providers: [
-    // Set up the global authentication guard
+    // Global Authentication Guard
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

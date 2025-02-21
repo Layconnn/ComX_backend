@@ -16,7 +16,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import * as nodemailer from 'nodemailer';
 import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { Twilio } from 'twilio';
+// import { Twilio } from 'twilio';
 import { LoginDto } from './dto/login.dto';
 import { ResendPasswordResetCodeDto } from './dto/resend-password-reset-code.dto';
 import { ResendEmailCodeDto } from './dto/resend-email-code.dto';
@@ -24,7 +24,7 @@ import { ResendEmailCodeDto } from './dto/resend-email-code.dto';
 @Injectable()
 export class AuthService {
   private transporter: nodemailer.Transporter;
-  private twilioClient: Twilio;
+  // private twilioClient: Twilio;
 
   constructor(
     private prisma: PrismaService,
@@ -40,13 +40,13 @@ export class AuthService {
       },
     });
     // Initialize Twilio client for SMS (for individual sign-up)
-    this.twilioClient = new Twilio(
-      this.config.get<string>('TWILIO_ACCOUNT_SID'),
-      this.config.get<string>('TWILIO_AUTH_TOKEN'),
-    );
+    // this.twilioClient = new Twilio(
+    //   this.config.get<string>('TWILIO_ACCOUNT_SID'),
+    //   this.config.get<string>('TWILIO_AUTH_TOKEN'),
+    // );
   }
 
-  // Helper to generate a 4-digit OTP as a string
+  // Helper to generate a 4-digit OTP
   private generateVerificationCode(): string {
     return Math.floor(1000 + Math.random() * 9000).toString();
   }
@@ -103,7 +103,6 @@ export class AuthService {
     }
 
     const hash = await argon.hash(dto.password);
-    // Generate OTP for sign-up and store in verificationCode field
     const verificationCode = this.generateVerificationCode();
 
     try {
@@ -162,7 +161,6 @@ export class AuthService {
           verificationCode,
         },
       });
-      // Send OTP via email (corporate uses email only)
       await this.sendEmailVerificationCode(dto.companyEmail, verificationCode);
       return {
         message:
@@ -180,7 +178,6 @@ export class AuthService {
   }
 
   // ----- Sign-Up OTP Verification -----
-  // Verifies the OTP sent during sign-up by comparing with verificationCode.
   async verifySignupOtp(dto: VerifyOtpDto) {
     // Look up the user by email (from either table)
     const individualUser = await this.prisma.individualUser.findUnique({
@@ -211,9 +208,8 @@ export class AuthService {
     return this.signToken(user);
   }
 
-  // In AuthService (backend)
+  // ---- Verify Reset Password OTP ----
   async verifyResetOtp(dto: VerifyOtpDto) {
-    // Look up user by email (using resetPasswordToken)
     const user =
       (await this.prisma.individualUser.findUnique({
         where: { email: dto.email },
@@ -227,7 +223,6 @@ export class AuthService {
     if (user.resetPasswordToken !== dto.otp) {
       throw new ForbiddenException('Incorrect OTP code.');
     }
-    // Optionally, return some temporary verification result (or token) here.
     return this.signToken(user);
   }
 
@@ -247,7 +242,6 @@ export class AuthService {
   }
 
   // ----- Password Reset Flow -----
-  // Request Password Reset: generate OTP and store it in resetPasswordToken.
   async requestPasswordReset(dto: RequestResetPasswordDto) {
     const user =
       (await this.prisma.individualUser.findUnique({
@@ -274,7 +268,7 @@ export class AuthService {
     return { message: 'Password reset verification code sent.' };
   }
 
-  // Reset Password: verify OTP (stored in resetPasswordToken) and update password.
+  // --- Reset Password ---
   async resetPassword(dto: ResetPasswordDto) {
     const user =
       (await this.prisma.individualUser.findFirst({
@@ -309,7 +303,6 @@ export class AuthService {
   }
 
   // ----- Resend OTP Functions -----
-  // For Sign-Up: update the verificationCode field and resend the OTP.
   async resendSignupVerificationCode(dto: ResendEmailCodeDto) {
     const user =
       (await this.prisma.individualUser.findUnique({
@@ -335,7 +328,7 @@ export class AuthService {
     return { message: 'New verification code sent to email.' };
   }
 
-  // For Password Reset: update the resetPasswordToken field and resend the OTP.
+  // ---- Resend Password Reset Code ----
   async resendPasswordResetCode(dto: ResendPasswordResetCodeDto) {
     const user =
       (await this.prisma.individualUser.findUnique({

@@ -1,4 +1,4 @@
-jest.setTimeout(30000); // Increase timeout to 30 seconds
+jest.setTimeout(30000);
 
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -85,7 +85,7 @@ describe('Auth e2e', () => {
           firstName: 'John',
           lastName: 'Doe',
           phone: '1234567890',
-          email: individualEmail, // same email
+          email: individualEmail,
           password: 'mypassword',
         })
         .expectStatus(403);
@@ -213,7 +213,7 @@ describe('Auth e2e', () => {
       try {
         token = await getResetOtp('comx@yopmail.com');
       } catch (err) {
-        token = '5678'; // fallback if OTP is cleared
+        token = '5678';
       }
       await pactum
         .spec()

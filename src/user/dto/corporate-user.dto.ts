@@ -1,7 +1,7 @@
 export class CorporateUserDto {
   id: number;
   companyName: string;
-  businessType: string; // or use your BusinessType enum
+  businessType: string;
   dateOfIncorporation: Date;
   email: string;
   createdAt: Date;

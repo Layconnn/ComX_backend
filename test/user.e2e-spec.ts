@@ -14,7 +14,7 @@ describe('Login & Get User e2e', () => {
   let accessToken: string;
   let userId: number;
 
-  // Use a unique email for testing purposes
+  // dummy email for testing purpose
   const individualEmail = 'comx+test@example.com';
   const password = 'mypassword';
 
@@ -36,7 +36,6 @@ describe('Login & Get User e2e', () => {
     pactum.request.setBaseUrl(`http://localhost:${port}`);
 
     // --- Create an Individual User ---
-    // Sign up the user
     await pactum
       .spec()
       .post('/auth/signup/individual')
@@ -49,8 +48,7 @@ describe('Login & Get User e2e', () => {
       })
       .expectStatus(201);
 
-    // Simulate OTP verification by clearing the OTP in the DB.
-    // In your normal flow you’d verify the OTP, but here we manually mark the user as verified.
+    // Verify OTP for normal flow, but here I manually marked the user as verified.
     await prisma.individualUser.update({
       where: { email: individualEmail },
       data: { verificationCode: null },

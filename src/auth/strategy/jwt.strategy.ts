@@ -16,12 +16,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       // Extract token from the Authorization header as a Bearer token
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      // Use a secret from your environment or fallback to a default
+      // Use a secret from my environment or reset to default
       secretOrKey: config.get('JWT_SECRET') || 'mancho',
     });
   }
 
-  // If validation passes, this method returns a value that gets attached to the request object (as req.user)
+  // If validation, returns a value that gets attached to the request object: req.user
   async validate(payload: {
     sub: number;
     email: string;
@@ -45,7 +45,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     if (user) {
       const { hash, verificationCode, ...rest } = user;
-      return { sub: user.id, ...rest }; // Return user without sensitive data like hash and verificationCode
+      return { sub: user.id, ...rest };
     }
 
     return null; // If user is not found, return null
