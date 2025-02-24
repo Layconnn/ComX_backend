@@ -20,7 +20,7 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   @Get('me')
   @ApiOperation({ summary: 'Get the current user profile' })
-  async getMe(@GetUser('sub') userEmail: string) {
+  async getMe(@GetUser('email') userEmail: string) {
     return this.userService.getUserByEmail(userEmail);
   }
 }

@@ -10,7 +10,7 @@ export class UserService {
   async getUserByEmail(
     userEmail: string,
   ): Promise<IndividualUserDto | CorporateUserDto> {
-    console.log('getUserById called with userEmail:', userEmail);
+    console.log('getUserByEmail called with userEmail:', userEmail);
     const individualUser = await this.prisma.individualUser.findUnique({
       where: { email: userEmail },
     });
