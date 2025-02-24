@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { IndividualUserDto } from './dto/individual-user.dto';
@@ -9,12 +7,12 @@ import { CorporateUserDto } from './dto/corporate-user.dto';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async getUserById(
-    userId: number,
+  async getUserByEmail(
+    userEmail: string,
   ): Promise<IndividualUserDto | CorporateUserDto> {
-    console.log('getUserById called with userId:', userId);
+    console.log('getUserById called with userEmail:', userEmail);
     const individualUser = await this.prisma.individualUser.findUnique({
-      where: { id: userId },
+      where: { email: userEmail },
     });
     if (individualUser) {
       return new IndividualUserDto({
@@ -28,7 +26,7 @@ export class UserService {
       });
     }
     const corporateUser = await this.prisma.corporateUser.findUnique({
-      where: { id: userId },
+      where: { email: userEmail },
     });
     if (corporateUser) {
       return new CorporateUserDto({
@@ -41,7 +39,7 @@ export class UserService {
         updatedAt: corporateUser.updatedAt,
       });
     }
-    console.error('User not found for id:', userId);
+    console.error('User not found for id:', userEmail);
     throw new NotFoundException('User not found');
   }
 }
