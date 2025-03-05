@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Injectable,
@@ -16,15 +15,16 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import * as nodemailer from 'nodemailer';
 import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-// import { Twilio } from 'twilio';
 import { LoginDto } from './dto/login.dto';
 import { ResendPasswordResetCodeDto } from './dto/resend-password-reset-code.dto';
 import { ResendEmailCodeDto } from './dto/resend-email-code.dto';
+import { UpdateIndividualProfileDto } from './dto/update-individualProfile.dto';
+import { UpdateCorporateProfileDto } from './dto/update-corporateProfile.dto';
+import { BusinessType } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
   private transporter: nodemailer.Transporter;
-  // private twilioClient: Twilio;
 
   constructor(
     private prisma: PrismaService,
@@ -39,11 +39,6 @@ export class AuthService {
         pass: this.config.get<string>('EMAIL_PASS'),
       },
     });
-    // Initialize Twilio client for SMS (for individual sign-up)
-    // this.twilioClient = new Twilio(
-    //   this.config.get<string>('TWILIO_ACCOUNT_SID'),
-    //   this.config.get<string>('TWILIO_AUTH_TOKEN'),
-    // );
   }
 
   // Helper to generate a 4-digit OTP
@@ -51,46 +46,72 @@ export class AuthService {
     return Math.floor(1000 + Math.random() * 9000).toString();
   }
 
-  // Helper to send an email with the OTP
   private async sendEmailVerificationCode(
     email: string,
     code: string,
   ): Promise<void> {
-    if (process.env.NODE_ENV === 'test') {
-      console.log(`[TEST] Would send email to ${email} with code: ${code}`);
-      return;
-    }
+    const htmlTemplate = `
+      <html>
+        <head>
+          <style>
+            .container {
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              font-family: Arial, sans-serif;
+              background-color: #f7f7f7;
+            }
+            .header {
+              background-color: #4CAF50;
+              color: white;
+              padding: 10px;
+              text-align: center;
+            }
+            .content {
+              margin: 20px 0;
+              font-size: 16px;
+              color: #333;
+            }
+            .code {
+              font-size: 24px;
+              font-weight: bold;
+              text-align: center;
+              margin: 20px 0;
+              color: #4CAF50;
+            }
+            .footer {
+              text-align: center;
+              font-size: 12px;
+              color: #777;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h2>ComX Verification Code</h2>
+            </div>
+            <div class="content">
+              <p>Thank you for signing up with ComX. Please use the verification code below to complete your sign up process.</p>
+            </div>
+            <div class="code">${code}</div>
+            <div class="content">
+              <p>If you did not initiate this request, please ignore this email.</p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} ComX. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
     await this.transporter.sendMail({
       from: this.config.get<string>('EMAIL_USER'),
       to: email,
-      subject: 'Your Verification Code',
-      text: `Your verification code is ${code}`,
-      html: `<p>Your verification code is <strong>${code}</strong></p>`,
+      subject: 'Your ComX Verification Code',
+      html: htmlTemplate,
     });
   }
-
-  // Helper to send an SMS with the OTP (used for individual sign-up)
-  // private async sendSmsVerificationCode(
-  //   phone: string,
-  //   code: string,
-  // ): Promise<void> {
-  //   if (process.env.NODE_ENV === 'test') {
-  //     console.log(`[TEST] Would send SMS to ${phone} with code: ${code}`);
-  //     return;
-  //   }
-  //   const from = this.config.get<string>('TWILIO_PHONE_NUMBER');
-  //   const message = `Your verification code is ${code}`;
-  //   try {
-  //     await this.twilioClient.messages.create({
-  //       body: message,
-  //       from,
-  //       to: phone,
-  //     });
-  //     console.log(`SMS sent to ${phone}`);
-  //   } catch (error) {
-  //     console.error(`Failed to send SMS to ${phone}`, error);
-  //   }
-  // }
 
   // ----- Sign-Up Flow (Individual) -----
   async signupIndividual(dto: IndividualSignupDto) {
@@ -116,11 +137,8 @@ export class AuthService {
           verificationCode,
         },
       });
-      // Send OTP via email and SMS
+      // Send OTP via email
       await this.sendEmailVerificationCode(dto.email, verificationCode);
-      // if (user.phone) {
-      //   await this.sendSmsVerificationCode(user.phone, verificationCode);
-      // }
       return {
         message:
           'Individual account created. A verification code has been sent to your email.',
@@ -134,6 +152,219 @@ export class AuthService {
       }
       throw error;
     }
+  }
+
+  async validateGoogleUser(userData: {
+    googleId: string;
+    displayName: string;
+    email: string | null;
+    picture: string | null;
+    accessToken: string;
+    accountType?: 'individual' | 'corporate';
+  }): Promise<any> {
+    console.log(
+      `Validating Google user: ${userData.email}, Account type: ${userData.accountType}`,
+    );
+
+    if (!userData.email) {
+      console.error('Google profile does not contain an email address');
+      throw new Error('Google profile does not contain an email address.');
+    }
+
+    // Check if a user exists in either table.
+    const existingIndividual = await this.prisma.individualUser.findUnique({
+      where: { email: userData.email },
+    });
+    const existingCorporate = await this.prisma.corporateUser.findUnique({
+      where: { email: userData.email },
+    });
+
+    if (existingIndividual || existingCorporate) {
+      const user = existingIndividual || existingCorporate;
+      console.log(`Found existing user: ${userData.email}`);
+
+      // Determine if the user is "incomplete" based on dummy values:
+      if (user && 'companyName' in user) {
+        // Corporate user: if companyName === 'company_dummy', then it's incomplete.
+        if (user.companyName === 'company_dummy') {
+          return user;
+        } else {
+          console.warn(
+            `Email already exists as a complete corporate account: ${userData.email}`,
+          );
+          throw new ForbiddenException('Email already exists');
+        }
+      } else {
+        // Individual user: if firstName === 'GoogleUser', then it's incomplete.
+        if (user && user.firstName === 'GoogleUser') {
+          return user;
+        } else {
+          console.warn(
+            `Email already exists as a complete individual account: ${userData.email}`,
+          );
+          throw new ForbiddenException('Email already exists');
+        }
+      }
+    }
+
+    // Use the provided accountType, defaulting to 'individual'.
+    const accountType = userData.accountType || 'individual';
+    console.log(`Creating new ${accountType} user for: ${userData.email}`);
+
+    if (accountType === 'corporate') {
+      // Create a new corporate user with dummy defaults.
+      const dummyHash = 'google_auth_dummy';
+      const companyName = 'company_dummy'; // to be updated later
+      const defaultBusinessType = 'RETAIL';
+      const dateOfIncorporation = new Date();
+
+      const newCorporateUser = await this.prisma.corporateUser.create({
+        data: {
+          googleId: userData.googleId,
+          displayName: userData.displayName,
+          email: userData.email,
+          picture: userData.picture,
+          companyName,
+          businessType: defaultBusinessType,
+          dateOfIncorporation,
+          hash: dummyHash,
+        },
+      });
+      console.log('Created corporate user:', newCorporateUser);
+      return newCorporateUser;
+    } else {
+      // Create a new individual user.
+      const firstName = 'GoogleUser';
+      const lastName = 'monday';
+      const dummyPhone = `google-${userData.googleId}`;
+      const dummyHash = 'google_auth_dummy';
+
+      const newIndividualUser = await this.prisma.individualUser.create({
+        data: {
+          googleId: userData.googleId,
+          displayName: userData.displayName,
+          email: userData.email,
+          picture: userData.picture,
+          firstName: firstName,
+          lastName,
+          phone: dummyPhone,
+          hash: dummyHash,
+        },
+      });
+      console.log('Created individual user:', newIndividualUser);
+      return newIndividualUser;
+    }
+  }
+
+  async googleLogin(
+    user: any,
+  ): Promise<{ access_token: string; isNewUser: boolean; user: any }> {
+    if (!user) {
+      console.error('No user provided for Google login');
+      throw new ForbiddenException('No user provided');
+    }
+
+    const isNewUser = user.companyName
+      ? user.companyName === 'company_dummy'
+      : user.firstName === 'GoogleUser';
+
+    console.log(
+      `Generating token for user: ${user.email}, isNewUser: ${isNewUser}`,
+    );
+
+    const tokenData = await this.signToken(user, isNewUser);
+    return {
+      ...tokenData,
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        picture: user.picture,
+        accountType: user.companyName ? 'corporate' : 'individual',
+      },
+    };
+  }
+
+  // Update individual user profile, then generate and send a verification code
+  async updateIndividualUserProfile(
+    dto: UpdateIndividualProfileDto,
+    userId: number,
+  ): Promise<{ message: string }> {
+    // Ensure the password field is provided
+    console.log('Received password:', dto.password);
+    if (!dto.password) {
+      throw new ForbiddenException('Password is required.');
+    }
+    const hashedPassword = await argon.hash(dto.password);
+
+    // Update the individual user's profile
+    const updatedUser = await this.prisma.individualUser.update({
+      where: { id: userId },
+      data: {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        phone: dto.phone,
+        hash: hashedPassword,
+      },
+    });
+
+    // Generate a 4-digit verification code
+    const verificationCode = this.generateVerificationCode();
+
+    // Update the user's record with the verification code
+    await this.prisma.individualUser.update({
+      where: { id: userId },
+      data: { verificationCode },
+    });
+
+    // Send the styled HTML verification email
+    await this.sendEmailVerificationCode(updatedUser.email, verificationCode);
+
+    return {
+      message:
+        'Profile updated successfully. A verification code has been sent to your email.',
+    };
+  }
+
+  // Update corporate user profile, then generate and send a verification code
+  async updateCorporateUserProfile(
+    dto: UpdateCorporateProfileDto,
+    userId: number,
+  ): Promise<{ message: string }> {
+    // Ensure the password field is provided
+    console.log('Received password:', dto.password);
+    if (!dto.password) {
+      throw new ForbiddenException('Password is required.');
+    }
+    const hashedPassword = await argon.hash(dto.password);
+
+    // Update the corporate user's profile. Convert the date string to a Date object.
+    const updatedUser = await this.prisma.corporateUser.update({
+      where: { id: userId },
+      data: {
+        companyName: dto.companyName,
+        businessType: dto.businessType as BusinessType,
+        dateOfIncorporation: new Date(dto.dateOfIncorporation),
+        hash: hashedPassword,
+      },
+    });
+
+    // Generate a 4-digit verification code
+    const verificationCode = this.generateVerificationCode();
+
+    // Update the corporate user's record with the verification code
+    await this.prisma.corporateUser.update({
+      where: { id: userId },
+      data: { verificationCode },
+    });
+
+    // Send the styled HTML verification email
+    await this.sendEmailVerificationCode(updatedUser.email, verificationCode);
+
+    return {
+      message:
+        'Profile updated successfully. A verification code has been sent to your email.',
+    };
   }
 
   // ----- Sign-Up Flow (Corporate) -----
@@ -355,13 +586,16 @@ export class AuthService {
   }
 
   // Generate JWT token
-  async signToken(user: any): Promise<{ access_token: string }> {
+  async signToken(
+    user: any,
+    isNewUser: boolean = false,
+  ): Promise<{ access_token: string; isNewUser: boolean }> {
     const userType = user.companyName ? 'corporate' : 'individual';
-    const payload = { sub: user.id, email: user.email, userType };
+    const payload = { sub: user.id, email: user.email, userType, isNewUser };
     const token = await this.jwt.signAsync(payload, {
       expiresIn: '1h',
       secret: this.config.get<string>('JWT_SECRET'),
     });
-    return { access_token: token };
+    return { access_token: token, isNewUser };
   }
 }

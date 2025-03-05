@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -13,15 +12,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private prisma: PrismaService,
   ) {
     super({
-      // Extract token from the Authorization header as a Bearer token
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      // Use a secret from my environment or reset to default
       secretOrKey: config.get('JWT_SECRET') || 'mancho',
     });
   }
 
-  // If validation, returns a value that gets attached to the request object: req.user
   async validate(payload: {
     sub: number;
     email: string;
@@ -48,6 +44,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       return { sub: user.id, ...rest };
     }
 
-    return null; // If user is not found, return null
+    return null;
   }
 }

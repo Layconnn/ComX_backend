@@ -20,11 +20,16 @@ model IndividualUser {
   phone              String   @unique
   email              String   @unique
   hash               String
-  verificationCode   String? // store the 4-digit verification code
-  resetPasswordToken String? // Add the resetPasswordToken field
+  verificationCode   String?  // store the 4-digit verification code
+  resetPasswordToken String?  // Add the resetPasswordToken field
+  googleId           String? 
+  displayName        String?  
+  picture            String?  
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
+  items              Item[]
+  
   @@map("individual_users")
 }
 
@@ -35,10 +40,29 @@ model CorporateUser {
   dateOfIncorporation DateTime
   email               String       @unique
   hash                String
-  verificationCode    String? // store the 4-digit verification code
-  resetPasswordToken  String? // Add the resetPasswordToken fieldy
+  verificationCode    String?      // store the 4-digit verification code
+  resetPasswordToken  String?      // Add the resetPasswordToken field
+  googleId            String? 
+  displayName         String?  
+  picture             String?  
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
+  items               Item[]
+  
   @@map("corporate_users")
+}
+
+model Item {
+  id                Int      @id @default(autoincrement())
+  name              String
+  description       String?
+
+  individualUserId  Int?     
+  corporateUserId   Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  individualUser  IndividualUser? @relation(fields: [individualUserId], references: [id])
+  corporateUser   CorporateUser?  @relation(fields: [corporateUserId], references: [id])
 }

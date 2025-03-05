@@ -39,7 +39,7 @@ export class UserService {
         updatedAt: corporateUser.updatedAt,
       });
     }
-    console.error('User not found for id:', userEmail);
+    console.error('User not found for email:', userEmail);
     throw new NotFoundException('User not found');
   }
 }
