@@ -21,6 +21,8 @@ import { ResendEmailCodeDto } from './dto/resend-email-code.dto';
 import { UpdateIndividualProfileDto } from './dto/update-individualProfile.dto';
 import { UpdateCorporateProfileDto } from './dto/update-corporateProfile.dto';
 import { BusinessType } from '@prisma/client';
+import hbs from 'nodemailer-express-handlebars';
+import * as path from 'path';
 
 @Injectable()
 export class AuthService {
@@ -39,6 +41,20 @@ export class AuthService {
         pass: this.config.get<string>('EMAIL_PASS'),
       },
     });
+
+    // Configure Handlebars options for templates
+    const handlebarOptions = {
+      viewEngine: {
+        extName: '.hbs',
+        partialsDir: path.join(__dirname, '..', 'templates'), // adjust path if needed
+        defaultLayout: false,
+      },
+      viewPath: path.join(__dirname, '..', 'templates'),
+      extName: '.hbs',
+    };
+
+    // Attach the handlebars plugin to the nodemailer transporter
+    this.transporter.use('compile', hbs(handlebarOptions));
   }
 
   // Helper to generate a 4-digit OTP
@@ -46,70 +62,30 @@ export class AuthService {
     return Math.floor(1000 + Math.random() * 9000).toString();
   }
 
-  private async sendEmailVerificationCode(
-    email: string,
-    code: string,
-  ): Promise<void> {
-    const htmlTemplate = `
-      <html>
-        <head>
-          <style>
-            .container {
-              max-width: 600px;
-              margin: 0 auto;
-              padding: 20px;
-              font-family: Arial, sans-serif;
-              background-color: #f7f7f7;
-            }
-            .header {
-              background-color: #4CAF50;
-              color: white;
-              padding: 10px;
-              text-align: center;
-            }
-            .content {
-              margin: 20px 0;
-              font-size: 16px;
-              color: #333;
-            }
-            .code {
-              font-size: 24px;
-              font-weight: bold;
-              text-align: center;
-              margin: 20px 0;
-              color: #4CAF50;
-            }
-            .footer {
-              text-align: center;
-              font-size: 12px;
-              color: #777;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h2>ComX Verification Code</h2>
-            </div>
-            <div class="content">
-              <p>Thank you for signing up with ComX. Please use the verification code below to complete your sign up process.</p>
-            </div>
-            <div class="code">${code}</div>
-            <div class="content">
-              <p>If you did not initiate this request, please ignore this email.</p>
-            </div>
-            <div class="footer">
-              <p>&copy; ${new Date().getFullYear()} ComX. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+  private async sendOtpEmail({
+    email,
+    subject,
+    heading,
+    message,
+    code,
+  }: {
+    email: string;
+    subject: string;
+    heading: string;
+    message: string;
+    code: string;
+  }): Promise<void> {
     await this.transporter.sendMail({
       from: this.config.get<string>('EMAIL_USER'),
       to: email,
-      subject: 'Your ComX Verification Code',
-      html: htmlTemplate,
+      subject,
+      template: 'otp-email', // refers to templates/otp-email.hbs
+      context: {
+        heading,
+        message,
+        code,
+        year: new Date().getFullYear(),
+      },
     });
   }
 
@@ -138,7 +114,14 @@ export class AuthService {
         },
       });
       // Send OTP via email
-      await this.sendEmailVerificationCode(dto.email, verificationCode);
+      await this.sendOtpEmail({
+        email: dto.email,
+        subject: 'Your ComX Verification Code',
+        heading: 'ComX Verification Code',
+        message:
+          'Thank you for signing up with ComX. Please use the verification code below to complete your Individual sign-up process.',
+        code: verificationCode,
+      });
       return {
         message:
           'Individual account created. A verification code has been sent to your email.',
@@ -318,7 +301,14 @@ export class AuthService {
     });
 
     // Send the styled HTML verification email
-    await this.sendEmailVerificationCode(updatedUser.email, verificationCode);
+    await this.sendOtpEmail({
+      email: updatedUser.email,
+      subject: 'Update Individual Profile OTP',
+      heading: 'Individual Profile Update',
+      message:
+        'Please use the verification code below to verify your profile update.',
+      code: verificationCode,
+    });
 
     return {
       message:
@@ -359,7 +349,14 @@ export class AuthService {
     });
 
     // Send the styled HTML verification email
-    await this.sendEmailVerificationCode(updatedUser.email, verificationCode);
+    await this.sendOtpEmail({
+      email: updatedUser.email,
+      subject: 'Update Corporate Profile OTP',
+      heading: 'Corporate Profile Update',
+      message:
+        'Please use the verification code below to verify your corporate profile update.',
+      code: verificationCode,
+    });
 
     return {
       message:
@@ -392,7 +389,14 @@ export class AuthService {
           verificationCode,
         },
       });
-      await this.sendEmailVerificationCode(dto.companyEmail, verificationCode);
+      await this.sendOtpEmail({
+        email: dto.companyEmail,
+        subject: 'Your ComX Verification Code',
+        heading: 'ComX Verification Code',
+        message:
+          'Thank you for signing up with ComX. Please use the verification code below to complete your corporate sign-up process.',
+        code: verificationCode,
+      });
       return {
         message:
           'Corporate account created. A verification code has been sent to your email.',
@@ -495,7 +499,13 @@ export class AuthService {
       });
     }
     console.log('Stored OTP for', dto.email, 'is', resetCode);
-    await this.sendEmailVerificationCode(dto.email, resetCode);
+    await this.sendOtpEmail({
+      email: dto.email,
+      subject: 'Reset Your ComX Password',
+      heading: 'Reset Password OTP',
+      message: 'Please use the code below to reset your ComX account password.',
+      code: resetCode,
+    });
     return { message: 'Password reset verification code sent.' };
   }
 
@@ -555,7 +565,14 @@ export class AuthService {
         data: { verificationCode: newCode },
       });
     }
-    await this.sendEmailVerificationCode(dto.email, newCode);
+    await this.sendOtpEmail({
+      email: dto.email,
+      subject: 'Your ComX Verification Code',
+      heading: 'ComX Verification Code',
+      message:
+        'Thank you for signing up with ComX. Please use the verification code below to complete your sign-up process.',
+      code: newCode,
+    });
     return { message: 'New verification code sent to email.' };
   }
 
@@ -581,7 +598,14 @@ export class AuthService {
         data: { resetPasswordToken: newCode },
       });
     }
-    await this.sendEmailVerificationCode(dto.email, newCode);
+    await this.sendOtpEmail({
+      email: dto.email,
+      subject: 'Reset Your ComX Password',
+      heading: 'Reset Password OTP',
+      message:
+        'Please use the verification code below to reset your ComX account password.',
+      code: newCode,
+    });
     return { message: 'New password reset code sent to email.' };
   }
 

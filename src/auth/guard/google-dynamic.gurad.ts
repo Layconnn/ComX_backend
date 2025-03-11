@@ -21,10 +21,7 @@ export class GoogleOAuthGuard extends AuthGuard('google') {
     const res = context.switchToHttp().getResponse();
 
     if (err || !user) {
-      // Check if it's your “Email already exists” error
       if (err?.message === 'Email already exists') {
-        // Determine whether corporate or individual
-        // You can look at req.query.accountType or any other logic you have
         const userType =
           req.query.accountType === 'corporate' ? 'corporate' : 'individual';
 
@@ -39,14 +36,13 @@ export class GoogleOAuthGuard extends AuthGuard('google') {
         res.redirect(
           `${redirectUrl}?error=An%20account%20with%20that%20email%20already%20exists`,
         );
-        return null; // Stop here to prevent further handling
+        return null;
       }
 
       // If it's some other error, handle or re-throw
       throw err || new UnauthorizedException();
     }
 
-    // If no error, return the user object so the controller can continue
     return user;
   }
 }

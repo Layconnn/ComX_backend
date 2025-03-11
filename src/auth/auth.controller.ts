@@ -60,10 +60,10 @@ export class AuthController {
     accountType: 'corporate' | 'individual' = 'individual',
     @Res() res: Response,
   ) {
-    // Generate a random state token and store the intended accountType in Redis.
+    // Generating a random state token and store the intended accountType in Redis.
     const state = await this.stateStore.generateState(accountType);
 
-    // Build the Google OAuth URL manually.
+    // Building the Google OAuth URL manually.
     const clientID = this.configService.get<string>('GOOGLE_CLIENT_ID');
     const redirectUri = this.configService.get<string>('GOOGLE_CALLBACK_URL');
     if (!redirectUri) {
@@ -87,13 +87,11 @@ export class AuthController {
   @UseGuards(GoogleOAuthGuard)
   async googleCallback(@Req() req: Request, @Res() res: Response) {
     // If we get here, user is successfully authenticated
-    // (unless your custom guard sees an error like "Email already exists").
     const tokenData = await this.authService.googleLogin(req.user);
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const googleEmail = (req.user as any).email;
 
-    // Redirect to your frontend to complete profile, or anywhere you want.
     return res.redirect(
       `${frontendUrl}/register/complete-profile?token=${tokenData.access_token}&email=${googleEmail}`,
     );
