@@ -1,43 +1,52 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Injectable, ExecutionContext, Logger } from '@nestjs/common';
+import {
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
-export class GoogleDynamicAuthGuard extends AuthGuard('google') {
-  private readonly logger = new Logger(GoogleDynamicAuthGuard.name);
+export class GoogleOAuthGuard extends AuthGuard('google') {
+  handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
+    console.log(
+      'Inside handleRequest => err:',
+      err,
+      'user:',
+      user,
+      'info:',
+      info,
+    );
+    const req = context.switchToHttp().getRequest();
+    const res = context.switchToHttp().getResponse();
 
-  getAuthenticateOptions(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest();
+    if (err || !user) {
+      // Check if it's your “Email already exists” error
+      if (err?.message === 'Email already exists') {
+        // Determine whether corporate or individual
+        // You can look at req.query.accountType or any other logic you have
+        const userType =
+          req.query.accountType === 'corporate' ? 'corporate' : 'individual';
 
-    // i logged this to debug
-    this.logger.log(`Guard: query params => ${JSON.stringify(request.query)}`);
+        // Build the correct redirect URL
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const redirectUrl =
+          userType === 'corporate'
+            ? `${frontendUrl}/register/corporate/company-information`
+            : `${frontendUrl}/register/individual/basic-information`;
 
-    // If this is the callback route, let Passport handle state verification.
-    if (request.url.includes('/callback')) {
-      return super.getAuthenticateOptions(context);
-    }
-
-    // in the initial req, setting accountType from query as a state
-    const accountType = request.query.accountType || 'individual';
-    this.logger.log(`Guard: using state => ${accountType}`);
-
-    return {
-      ...super.getAuthenticateOptions(context),
-      state: accountType,
-    };
-  }
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    try {
-      return (await super.canActivate(context)) as boolean;
-    } catch (error) {
-      this.logger.error(`Authentication error: ${error.message}`, error.stack);
-      const request = context.switchToHttp().getRequest();
-      if (request.url.includes('/callback')) {
-        request.authError = error;
-        return true;
+        // Redirect with the error message in the query string
+        res.redirect(
+          `${redirectUrl}?error=An%20account%20with%20that%20email%20already%20exists`,
+        );
+        return null; // Stop here to prevent further handling
       }
-      throw error;
+
+      // If it's some other error, handle or re-throw
+      throw err || new UnauthorizedException();
     }
+
+    // If no error, return the user object so the controller can continue
+    return user;
   }
 }

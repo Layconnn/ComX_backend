@@ -8,6 +8,9 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guard';
 import { KeepAliveService } from './common/keep-alive.service';
 import { ItemModule } from './item/item.module';
+import { MarketModule } from './market/market.module';
+import { PortfolioModule } from './portfolio/portfolio.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -19,6 +22,9 @@ import { ItemModule } from './item/item.module';
     UserModule,
     PrismaModule,
     ItemModule,
+    MarketModule,
+    PortfolioModule,
+    SettingsModule,
   ],
   providers: [
     // Global Authentication Guard

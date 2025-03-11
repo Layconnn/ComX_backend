@@ -33,6 +33,7 @@ import { UpdateIndividualProfileDto } from './dto/update-individualProfile.dto';
 import { UpdateCorporateProfileDto } from './dto/update-corporateProfile.dto';
 import { JwtAuthGuard } from './guard';
 import { RedisStateStoreService } from './store/redis-state-store.service';
+import { GoogleOAuthGuard } from './guard/google-dynamic.gurad';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -43,7 +44,6 @@ export class AuthController {
     private configService: ConfigService,
   ) {}
 
-  @HttpCode(HttpStatus.OK)
   @Public()
   @Get('google')
   @UseGuards(AuthGuard('google'))
@@ -82,23 +82,18 @@ export class AuthController {
     return res.redirect(googleAuthUrl);
   }
 
-  @HttpCode(HttpStatus.OK)
   @Public()
   @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleOAuthGuard)
   async googleCallback(@Req() req: Request, @Res() res: Response) {
-    // By the time this endpoint is hit, Passport has exchanged the code for user profile,
-    // and the GoogleStrategy.validate() has already looked up and removed the state from Redis.
-    if (!req.user) {
-      return res
-        .status(400)
-        .send('Authentication failed: No user data received');
-    }
+    // If we get here, user is successfully authenticated
+    // (unless your custom guard sees an error like "Email already exists").
     const tokenData = await this.authService.googleLogin(req.user);
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const googleEmail = (req.user as any).email;
 
+    // Redirect to your frontend to complete profile, or anywhere you want.
     return res.redirect(
       `${frontendUrl}/register/complete-profile?token=${tokenData.access_token}&email=${googleEmail}`,
     );

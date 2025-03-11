@@ -24,11 +24,15 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         configService.get<string>('GOOGLE_CALLBACK_URL') ||
         'http://localhost:4000/api/auth/google/callback',
       scope: ['email', 'profile'],
-      passReqToCallback: true,
+      passReqToCallback: true, // We need req to read the state parameter
+      // state: true, // Enable state parameter support
     });
 
     this.logger.log(
-      `Google Strategy initialized with callback URL: ${configService.get<string>('GOOGLE_CALLBACK_URL') || 'http://localhost:4000/api/auth/google/callback'}`,
+      `Google Strategy initialized with callback URL: ${
+        configService.get<string>('GOOGLE_CALLBACK_URL') ||
+        'http://localhost:4000/api/auth/google/callback'
+      }`,
     );
   }
 
@@ -42,11 +46,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     this.logger.log('GoogleStrategy validate() called');
     this.logger.log(`Request query: ${JSON.stringify(req.query)}`);
 
-    // Retrieve the state token from the query and look it up in Redis
+    // Retrieve the state token from the query.
     const stateToken = req.query.state as string;
     if (!stateToken) {
       return done(new ForbiddenException('Missing state parameter'), false);
     }
+
+    // Use Redis to get the account type associated with the state token.
     const accountType = await this.redisStateStore.getAccountType(stateToken);
     if (!accountType) {
       return done(
@@ -57,7 +63,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     // Remove the state from Redis after usage.
     await this.redisStateStore.removeState(stateToken);
 
-    this.logger.log(`Received accountType (from redis state): ${accountType}`);
+    this.logger.log(`Received accountType (from Redis state): ${accountType}`);
 
     const { id, displayName, emails, photos } = profile;
     const email =
@@ -66,14 +72,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       Array.isArray(photos) && photos.length > 0 ? photos[0].value : null;
 
     try {
-      // Calling AuthService.validateGoogleUser with the accountType from Redis
+      // Now pass the retrieved accountType to your AuthService.
       const user = await this.authService.validateGoogleUser({
         googleId: id,
         displayName,
         email,
         picture: photo,
         accessToken,
-        accountType,
+        accountType, // Will be either 'corporate' or 'individual'
       });
 
       done(null, user);
