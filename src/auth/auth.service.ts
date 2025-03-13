@@ -1,4 +1,3 @@
-import { MailService } from './../mail/mail.service';
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Injectable,
@@ -13,7 +12,6 @@ import * as argon from 'argon2';
 import { IndividualSignupDto } from './dto/individual-signup.dto';
 import { CorporateSignupDto } from './dto/corporate-signup.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import * as nodemailer from 'nodemailer';
 import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -21,9 +19,8 @@ import { ResendPasswordResetCodeDto } from './dto/resend-password-reset-code.dto
 import { ResendEmailCodeDto } from './dto/resend-email-code.dto';
 import { UpdateIndividualProfileDto } from './dto/update-individualProfile.dto';
 import { UpdateCorporateProfileDto } from './dto/update-corporateProfile.dto';
+import { MailService } from './../mail/mail.service';
 import { BusinessType } from '@prisma/client';
-import * as hbs from 'nodemailer-express-handlebars';
-import * as path from 'path';
 
 @Injectable()
 export class AuthService {
@@ -32,35 +29,7 @@ export class AuthService {
     private mailService: MailService,
     private jwt: JwtService,
     private config: ConfigService,
-  ) {
-    // Initialize email transporter
-    // this.transporter = nodemailer.createTransport({
-    //   service: 'gmail',
-    //   auth: {
-    //     user: this.config.get<string>('EMAIL_USER'),
-    //     pass: this.config.get<string>('EMAIL_PASS'),
-    //   },
-    // });
-    // const isProd = process.env.NODE_ENV === 'production';
-    // // In production, __dirname (inside dist) will point to your compiled folder,
-    // // so use '../templates' relative to that. In development, use the source folder.
-    // const templatesDir = isProd
-    //   ? path.join(__dirname, '..', 'templates')
-    //   : path.join(process.cwd(), 'src', 'templates');
-    // const handlebarOptions = {
-    //   viewEngine: {
-    //     extName: '.hbs',
-    //     partialsDir: templatesDir,
-    //     defaultLayout: false,
-    //   } as any,
-    //   viewPath: templatesDir,
-    //   extName: '.hbs',
-    // };
-    // Attach the handlebars plugin to the nodemailer transporter
-    // this.transporter.use('compile', hbs(handlebarOptions));
-  }
-
-  // Helper to generate a 4-digit OTP
+  ) {}
   private generateVerificationCode(): string {
     return Math.floor(1000 + Math.random() * 9000).toString();
   }
