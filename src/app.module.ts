@@ -11,6 +11,7 @@ import { ItemModule } from './item/item.module';
 import { MarketModule } from './market/market.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
 import { SettingsModule } from './settings/settings.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { SettingsModule } from './settings/settings.module';
     MarketModule,
     PortfolioModule,
     SettingsModule,
+    MailModule,
   ],
   providers: [
     // Global Authentication Guard

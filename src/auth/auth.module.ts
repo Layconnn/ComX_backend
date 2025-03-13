@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategy/jwt.strategy';
 import { RedisStateStoreService } from './store/redis-state-store.service';
 import { GoogleStrategy } from './strategy/google.strategy';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { GoogleStrategy } from './strategy/google.strategy';
       }),
       inject: [ConfigService],
     }),
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, GoogleStrategy, RedisStateStoreService],

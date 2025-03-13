@@ -1,3 +1,4 @@
+import { MailService } from './../mail/mail.service';
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Injectable,
@@ -21,40 +22,42 @@ import { ResendEmailCodeDto } from './dto/resend-email-code.dto';
 import { UpdateIndividualProfileDto } from './dto/update-individualProfile.dto';
 import { UpdateCorporateProfileDto } from './dto/update-corporateProfile.dto';
 import { BusinessType } from '@prisma/client';
-import hbs from 'nodemailer-express-handlebars';
+import * as hbs from 'nodemailer-express-handlebars';
 import * as path from 'path';
 
 @Injectable()
 export class AuthService {
-  private transporter: nodemailer.Transporter;
-
   constructor(
     private prisma: PrismaService,
+    private mailService: MailService,
     private jwt: JwtService,
     private config: ConfigService,
   ) {
     // Initialize email transporter
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: this.config.get<string>('EMAIL_USER'),
-        pass: this.config.get<string>('EMAIL_PASS'),
-      },
-    });
-
-    // Configure Handlebars options for templates
-    const handlebarOptions = {
-      viewEngine: {
-        extName: '.hbs',
-        partialsDir: path.join(__dirname, '..', 'templates'), // adjust path if needed
-        defaultLayout: false,
-      },
-      viewPath: path.join(__dirname, '..', 'templates'),
-      extName: '.hbs',
-    };
-
+    // this.transporter = nodemailer.createTransport({
+    //   service: 'gmail',
+    //   auth: {
+    //     user: this.config.get<string>('EMAIL_USER'),
+    //     pass: this.config.get<string>('EMAIL_PASS'),
+    //   },
+    // });
+    // const isProd = process.env.NODE_ENV === 'production';
+    // // In production, __dirname (inside dist) will point to your compiled folder,
+    // // so use '../templates' relative to that. In development, use the source folder.
+    // const templatesDir = isProd
+    //   ? path.join(__dirname, '..', 'templates')
+    //   : path.join(process.cwd(), 'src', 'templates');
+    // const handlebarOptions = {
+    //   viewEngine: {
+    //     extName: '.hbs',
+    //     partialsDir: templatesDir,
+    //     defaultLayout: false,
+    //   } as any,
+    //   viewPath: templatesDir,
+    //   extName: '.hbs',
+    // };
     // Attach the handlebars plugin to the nodemailer transporter
-    this.transporter.use('compile', hbs(handlebarOptions));
+    // this.transporter.use('compile', hbs(handlebarOptions));
   }
 
   // Helper to generate a 4-digit OTP
@@ -62,32 +65,32 @@ export class AuthService {
     return Math.floor(1000 + Math.random() * 9000).toString();
   }
 
-  private async sendOtpEmail({
-    email,
-    subject,
-    heading,
-    message,
-    code,
-  }: {
-    email: string;
-    subject: string;
-    heading: string;
-    message: string;
-    code: string;
-  }): Promise<void> {
-    await this.transporter.sendMail({
-      from: this.config.get<string>('EMAIL_USER'),
-      to: email,
-      subject,
-      template: 'otp-email', // refers to templates/otp-email.hbs
-      context: {
-        heading,
-        message,
-        code,
-        year: new Date().getFullYear(),
-      },
-    });
-  }
+  // private async sendOtpEmail({
+  //   email,
+  //   subject,
+  //   heading,
+  //   message,
+  //   code,
+  // }: {
+  //   email: string;
+  //   subject: string;
+  //   heading: string;
+  //   message: string;
+  //   code: string;
+  // }): Promise<void> {
+  //   await this.transporter.sendMail({
+  //     from: this.config.get<string>('EMAIL_USER'),
+  //     to: email,
+  //     subject,
+  //     template: 'otp-email',
+  //     context: {
+  //       heading,
+  //       message,
+  //       code,
+  //       year: new Date().getFullYear(),
+  //     },
+  //   } as any);
+  // }
 
   // ----- Sign-Up Flow (Individual) -----
   async signupIndividual(dto: IndividualSignupDto) {
@@ -114,7 +117,7 @@ export class AuthService {
         },
       });
       // Send OTP via email
-      await this.sendOtpEmail({
+      await this.mailService.sendOtpEmail({
         email: dto.email,
         subject: 'Your ComX Verification Code',
         heading: 'ComX Verification Code',
@@ -301,7 +304,7 @@ export class AuthService {
     });
 
     // Send the styled HTML verification email
-    await this.sendOtpEmail({
+    await this.mailService.sendOtpEmail({
       email: updatedUser.email,
       subject: 'Update Individual Profile OTP',
       heading: 'Individual Profile Update',
@@ -349,7 +352,7 @@ export class AuthService {
     });
 
     // Send the styled HTML verification email
-    await this.sendOtpEmail({
+    await this.mailService.sendOtpEmail({
       email: updatedUser.email,
       subject: 'Update Corporate Profile OTP',
       heading: 'Corporate Profile Update',
@@ -389,7 +392,7 @@ export class AuthService {
           verificationCode,
         },
       });
-      await this.sendOtpEmail({
+      await this.mailService.sendOtpEmail({
         email: dto.companyEmail,
         subject: 'Your ComX Verification Code',
         heading: 'ComX Verification Code',
@@ -499,7 +502,7 @@ export class AuthService {
       });
     }
     console.log('Stored OTP for', dto.email, 'is', resetCode);
-    await this.sendOtpEmail({
+    await this.mailService.sendOtpEmail({
       email: dto.email,
       subject: 'Reset Your ComX Password',
       heading: 'Reset Password OTP',
@@ -565,7 +568,7 @@ export class AuthService {
         data: { verificationCode: newCode },
       });
     }
-    await this.sendOtpEmail({
+    await this.mailService.sendOtpEmail({
       email: dto.email,
       subject: 'Your ComX Verification Code',
       heading: 'ComX Verification Code',
@@ -598,7 +601,7 @@ export class AuthService {
         data: { resetPasswordToken: newCode },
       });
     }
-    await this.sendOtpEmail({
+    await this.mailService.sendOtpEmail({
       email: dto.email,
       subject: 'Reset Your ComX Password',
       heading: 'Reset Password OTP',
