@@ -17,6 +17,8 @@ import * as path from 'path';
           ? path.join(__dirname, '..', 'templates')
           : path.join(process.cwd(), 'src', 'templates');
 
+        console.log('Using templates directory:', templatesDir);
+
         return {
           transport: {
             host: config.get<string>('EMAIL_HOST'),
@@ -31,7 +33,7 @@ import * as path from 'path';
           },
           template: {
             dir: templatesDir,
-            adapter: new HandlebarsAdapter(), // Correct adapter import
+            adapter: new HandlebarsAdapter(),
             options: {
               strict: true,
             },
